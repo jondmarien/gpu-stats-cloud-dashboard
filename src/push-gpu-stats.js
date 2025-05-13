@@ -5,7 +5,7 @@ import fetch from 'node-fetch';
 const DROPLET_PUSH_URL = 'https://gpustats.chron0.tech/push-sse';
 
 // How often to push stats (ms)
-const INTERVAL = 2000;
+const INTERVAL = 1500;
 
 async function pushStats() {
   try {
