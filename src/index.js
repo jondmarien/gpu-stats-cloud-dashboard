@@ -8,6 +8,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const SSE_PORT = process.env.LOCAL_GPU_SERVER_PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
@@ -47,7 +48,7 @@ app.get('/api/latest', authenticate, (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.send('GPU Info Backend is running.');
+  res.send(`GPU Info Backend is running on ${SSE_PORT}.`);
 });
 
 app.listen(PORT, () => {
