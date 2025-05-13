@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "concurrently \"nodemon src/index.js\" \"nodemon src/local-gpu-server.js\""
+    "dev": "nodemon src/index.js"
   },
   "keywords": [
     "gpu",
