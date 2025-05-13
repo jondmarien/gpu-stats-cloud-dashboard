@@ -12,6 +12,7 @@ const PORT = process.env.LOCAL_GPU_SERVER_PORT || 3001;
 
 // Config: Set these in your .env or here
 const CLOUD_BACKEND_URL = process.env.CLOUD_BACKEND_URL || 'http://localhost:3000/api/push';
+const GPU_SSE_URL = process.env.GPU_SSE_URL || 'http://localhost:3001/gpu/stream';
 const API_KEY = process.env.API_KEY_MYPc; // Use your device's API key
 const DEVICE_ID = 'thebeast'; // Change this per device
 
@@ -26,70 +27,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// GET /gpu - returns local GPU stats
-app.get('/gpu', async (req, res) => {
-  try {
-    const gpus = await si.graphics();
-    const nvidiaGpu = gpus.controllers && gpus.controllers.find(ctrl => ctrl.vendor && ctrl.vendor.toLowerCase().includes('nvidia'));
-    if (!nvidiaGpu) {
-      return res.status(404).json({ error: 'No NVIDIA GPU found' });
-    }
-    res.json({
-      name: nvidiaGpu.name || nvidiaGpu.model,
-      vendor: nvidiaGpu.vendor,
-      memoryTotal: nvidiaGpu.memoryTotal || nvidiaGpu.vram,
-      memoryUsed: nvidiaGpu.memoryUsed,
-      memoryFree: nvidiaGpu.memoryFree,
-      temperatureGpu: nvidiaGpu.temperatureGpu,
-      utilizationGpu: nvidiaGpu.utilizationGpu,
-      utilizationMemory: nvidiaGpu.utilizationMemory,
-      fanSpeed: nvidiaGpu.fanSpeed,
-      powerDraw: nvidiaGpu.powerDraw,
-      powerLimit: nvidiaGpu.powerLimit,
-      clockCore: nvidiaGpu.clockCore,
-      clockMemory: nvidiaGpu.clockMemory,
-      driverVersion: nvidiaGpu.driverVersion
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Periodically push stats to cloud backend
-async function pushStats() {
-  try {
-    const gpus = await si.graphics();
-    const nvidiaGpu = gpus.controllers && gpus.controllers.find(ctrl => ctrl.vendor && ctrl.vendor.toLowerCase().includes('nvidia'));
-    if (!nvidiaGpu) return;
-    const stats = {
-      name: nvidiaGpu.name || nvidiaGpu.model,
-      vendor: nvidiaGpu.vendor,
-      memoryTotal: nvidiaGpu.memoryTotal || nvidiaGpu.vram,
-      memoryUsed: nvidiaGpu.memoryUsed,
-      memoryFree: nvidiaGpu.memoryFree,
-      temperatureGpu: nvidiaGpu.temperatureGpu,
-      utilizationGpu: nvidiaGpu.utilizationGpu,
-      utilizationMemory: nvidiaGpu.utilizationMemory,
-      fanSpeed: nvidiaGpu.fanSpeed,
-      powerDraw: nvidiaGpu.powerDraw,
-      powerLimit: nvidiaGpu.powerLimit,
-      clockCore: nvidiaGpu.clockCore,
-      clockMemory: nvidiaGpu.clockMemory,
-      driverVersion: nvidiaGpu.driverVersion
-    };
-    await fetch(CLOUD_BACKEND_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY
-      },
-      body: JSON.stringify({ deviceId: DEVICE_ID, stats })
-    });
-    console.log(`[${new Date().toISOString()}] Stats pushed to cloud backend.`);
-  } catch (err) {
-    console.error('Failed to push stats:', err.message);
-  }
-}
 
 // SSE clients array
 const sseClients = [];
@@ -146,11 +83,7 @@ setInterval(async () => {
   }
 }, 2000);
 
-// Push stats every 10 seconds
-setInterval(pushStats, 10000);
 
 app.listen(PORT, () => {
-  console.log(`Local GPU info server running on http://localhost:${PORT}/gpu`);
   console.log(`SSE live stats at http://localhost:${PORT}/gpu/stream`);
-  console.log('Will push stats to:', CLOUD_BACKEND_URL);
 });
