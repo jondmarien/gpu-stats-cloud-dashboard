@@ -1,11 +1,12 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import si from 'systeminformation';
 import { getLatestStats, setLatestStats } from './storage.js';
 import { API_KEYS } from './config.js';
-
-dotenv.config();
+console.log('Loaded API_KEYS:', API_KEYS);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
