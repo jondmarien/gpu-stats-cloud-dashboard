@@ -10,7 +10,7 @@ console.log('Loaded API_KEYS:', API_KEYS);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DEVICE_ID = 'thebeast'; // Change this per device
+const DEVICE_ID = process.env.DEVICE_ID; // Change this per device
 
 app.use(cors());
 app.use(express.json());
@@ -26,27 +26,13 @@ function authenticate(req, res, next) {
   next();
 }
 
-// POST /api/push
-app.post('/api/push', authenticate, (req, res) => {
-  const { deviceId, stats } = req.body;
-  if (!deviceId || !stats) {
-    return res.status(400).json({ error: 'Missing deviceId or stats' });
-  }
-  setLatestStats(deviceId, stats);
+// POST /push-sse: Accept stats and broadcast to all SSE clients
+app.post('/push-sse', express.json(), (req, res) => {
+  const stats = req.body;
+  if (!stats) return res.status(400).json({ error: 'Missing stats' });
+  const data = `data: ${JSON.stringify(stats)}\n\n`;
+  sseClients.forEach(client => client.write(data));
   res.json({ success: true });
-});
-
-// GET /api/latest?device=DEVICE_ID
-app.get('/api/latest', authenticate, (req, res) => {
-  const deviceId = req.query.device;
-  if (!deviceId) {
-    return res.status(400).json({ error: 'Missing device parameter' });
-  }
-  const stats = getLatestStats(deviceId);
-  if (!stats) {
-    return res.status(404).json({ error: 'No stats found for device' });
-  }
-  res.json({ deviceId, stats });
 });
 
 // --- SSE endpoint for live GPU stats ---
